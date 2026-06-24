@@ -20,21 +20,21 @@ export function generateDemoArchitecture(prompt: string): CompleteArchitecture {
       requiresClarification: false,
       appType,
       entities: [
-        { name: "User", description: "System user", attributes: ["email", "name"] },
-        { name: entityName, description: `Core ${entityName.toLowerCase()}`, attributes: ["title", "content"] }
+        { name: "User", description: "System user", fields: [{ name: "email", type: "string", required: true }, { name: "name", type: "string", required: true }] },
+        { name: entityName, description: `Core ${entityName.toLowerCase()}`, fields: [{ name: "title", type: "string", required: true }, { name: "content", type: "string", required: true }] }
       ],
       roles: ["admin", "user"],
       features: [
-        { name: `Manage ${entityName}s`, description: `CRUD for ${entityName}`, complexity: "medium" }
+        { name: `Manage ${entityName}s`, description: `CRUD for ${entityName}` }
       ]
     },
     systemDesign: {
       entities: [
-        { name: "User", fields: ["id", "email", "createdAt", "updatedAt"] },
-        { name: entityName, fields: ["id", "title", "userId", "createdAt", "updatedAt"] }
+        { name: "User", fields: [{ name: "id", type: "string", required: true }, { name: "email", type: "string", required: true }, { name: "createdAt", type: "string", required: true }, { name: "updatedAt", type: "string", required: true }] },
+        { name: entityName, fields: [{ name: "id", type: "string", required: true }, { name: "title", type: "string", required: true }, { name: "userId", type: "string", required: true }, { name: "createdAt", type: "string", required: true }, { name: "updatedAt", type: "string", required: true }] }
       ],
       relationships: [
-        { from: "User", to: entityName, type: "1:N" }
+        { from: "User", to: entityName, type: "one-to-many", field: "userId" }
       ],
       workflows: [],
       permissions: [

@@ -99,7 +99,7 @@ export async function runPipeline(
         schemas,
         validationReport: {
           isValid: false,
-          issues: [{type: "schema", path: "intent", message: "Clarification required", severity: "error"}],
+          issues: [{id: "clarification_needed", code: "CLARIFICATION_REQUIRED", schema: "system", message: "Clarification required", severity: "error"}],
           summary: { errors: 1, warnings: 0, info: 0 },
           timestamp: new Date().toISOString(),
         },
