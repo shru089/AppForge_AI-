@@ -180,7 +180,7 @@ function AppPreview({ uiSchema }: { uiSchema: unknown }) {
                           <tr key={row} className="border-b border-gray-50 dark:border-white/[0.03] hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                             {(comp.fields ?? ["id", "name", "status", "createdAt"]).slice(0, 5).map(f => (
                               <td key={f} className="px-3 py-2">
-                                <div className="h-2.5 rounded-full bg-gray-200 dark:bg-white/10" style={{ width: `${40 + Math.random() * 40}%` }} />
+                                <div className={`h-2.5 rounded-full bg-gray-200 dark:bg-white/10 ${['w-1/2', 'w-2/3', 'w-3/4', 'w-4/5'][Math.floor(Math.random() * 4)]}`} />
                               </td>
                             ))}
                           </tr>
@@ -209,7 +209,7 @@ function AppPreview({ uiSchema }: { uiSchema: unknown }) {
                         <div className="text-[10px] text-gray-400 dark:text-white/30">{label}</div>
                         <div className="h-5 w-16 mt-1 rounded bg-gray-200 dark:bg-white/10" />
                         <div className="h-1.5 w-full mt-2 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${50 + i * 15}%` }} />
+                          <div className={`h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 ${i === 0 ? 'w-1/2' : i === 1 ? 'w-[65%]' : 'w-[80%]'}`} />
                         </div>
                       </div>
                     ))}
@@ -500,6 +500,13 @@ export default function ProjectPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
+                <Link
+                  href={`/runtime/${project.id}`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Open Runtime
+                </Link>
                 <button
                   onClick={() => window.location.reload()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-gray-600 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"

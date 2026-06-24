@@ -7,7 +7,6 @@
 import type { PipelineResult } from "@/types/pipeline";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __demoStore: Map<string, PipelineResult> | undefined;
 }
 

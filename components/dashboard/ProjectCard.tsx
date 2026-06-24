@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { formatDate, truncate } from "@/lib/utils";
 import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
 import { StatusBadge } from "@/components/ui/Badge";
-import { Clock, ArrowRight, Trash2 } from "lucide-react";
+import { Clock, ArrowRight, PlayCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface Project {
@@ -36,6 +36,12 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
     }
   };
 
+  const handleOpenRuntime = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/runtime/${project.id}`);
+  };
+
   return (
     <div
       onClick={() => router.push(`/project/${project.id}`)}
@@ -61,6 +67,13 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
               {formatDate(project.createdAt)}
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={handleOpenRuntime}
+                aria-label="Open runtime"
+                className="p-1.5 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-500/20 text-gray-400 dark:text-white/40 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4" />
+              </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}

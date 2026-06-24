@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                 <div>
                   <h3 className="font-semibold text-red-400 mb-1">Database Connection Error</h3>
                   <p className="text-sm text-red-400/80 leading-relaxed">
-                    We're having trouble connecting to your projects. You can still use the prompt box to start a new app, but your history may not save properly until the connection is restored.
+                    We&apos;re having trouble connecting to your projects. You can still use the prompt box to start a new app, but your history may not save properly until the connection is restored.
                   </p>
                 </div>
               </div>

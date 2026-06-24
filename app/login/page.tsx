@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 export default function LoginPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -114,10 +115,15 @@ export default function LoginPage() {
                   type="email" 
                   placeholder="you@company.com" 
                   aria-label="Email Address"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:border-gray-400 dark:focus:border-white/30 focus:ring-1 focus:ring-gray-400 dark:focus:ring-0 transition-all"
                 />
               </div>
-              <button className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold text-black dark:text-white bg-gradient-to-r from-[#fef4e8] to-[#fce4fb] dark:from-white/5 dark:to-white/5 border border-gray-100 dark:border-white/10 hover:opacity-90 dark:hover:bg-white/10 transition-all group">
+              <button
+                onClick={() => signIn("nodemailer", { email, callbackUrl: "/dashboard" })}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold text-black dark:text-white bg-gradient-to-r from-[#fef4e8] to-[#fce4fb] dark:from-white/5 dark:to-white/5 border border-gray-100 dark:border-white/10 hover:opacity-90 dark:hover:bg-white/10 transition-all group"
+              >
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 Send magic link
               </button>

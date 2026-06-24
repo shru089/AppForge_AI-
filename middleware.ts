@@ -1,17 +1,18 @@
-import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// We create an edge-compatible NextAuth instance just for the middleware.
-// This avoids importing Prisma or any Node-only modules into the Edge runtime.
-const { auth } = NextAuth({
-  providers: [],
-});
+function hasSessionCookie(req: NextRequest) {
+  return [
+    "authjs.session-token",
+    "__Secure-authjs.session-token",
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+  ].some((name) => Boolean(req.cookies.get(name)?.value));
+}
 
-export default auth((req) => {
+export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Public routes — no auth needed
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
@@ -21,14 +22,14 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  if (!req.auth) {
+  if (!hasSessionCookie(req)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
