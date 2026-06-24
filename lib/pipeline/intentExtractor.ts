@@ -7,7 +7,17 @@ You are an expert software architect. Analyze the following natural language app
 User Requirement:
 "${userPrompt}"
 
-Return a JSON object with EXACTLY this structure:
+Return a JSON object. If the requirement is extremely vague (e.g. "make an app", "do something cool") or contradictory, DO NOT hallucinate. Instead, return EXACTLY this structure:
+{
+  "requiresClarification": true,
+  "clarificationReason": "Specific reason why the prompt is too vague or contradictory",
+  "appType": "unknown",
+  "entities": [],
+  "roles": [],
+  "features": []
+}
+
+Otherwise, if it is a valid request, return a JSON object with EXACTLY this structure:
 {
   "appType": "string (e.g. 'e-commerce', 'crm', 'saas', 'blog', 'marketplace', 'social-network', 'task-manager', 'analytics-dashboard')",
   "entities": [
@@ -43,10 +53,15 @@ Rules:
 - Be thorough — include 4-10 entities for a typical SaaS
 - Roles must always include at least ["admin", "user"]
 - Features must cover CRUD for each entity plus business logic features
+- IF the prompt is completely lacking detail, you MUST set requiresClarification to true and explain why.
 `;
 
 export async function extractIntent(prompt: string): Promise<IntentOutput> {
   const result = await generateJSON<IntentOutput>(INTENT_PROMPT(prompt));
+
+  if (result.requiresClarification) {
+    throw new Error(`Prompt requires clarification: ${result.clarificationReason || "Input is too vague."}`);
+  }
 
   // Ensure required fields exist
   const sanitized: IntentOutput = {

@@ -6,6 +6,8 @@ export interface IntentOutput {
   roles: string[];
   features: Feature[];
   description?: string;
+  requiresClarification?: boolean;
+  clarificationReason?: string;
 }
 
 export interface Entity {
