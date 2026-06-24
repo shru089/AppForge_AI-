@@ -1,0 +1,230 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── NextAuth Models ─────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Application Models ───────────────────────────────────────────────────────
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  prompt      String        @db.Text
+  status      ProjectStatus @default(PENDING)
+  userId      String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatedSchema   GeneratedSchema?
+  validationReports ValidationReport[]
+  repairLogs        RepairLog[]
+  metrics           Metric[]
+  runtimeRecords    RuntimeRecord[]
+  notifications     RuntimeNotification[]
+  workflowRuns      WorkflowRun[]
+  csvImports        CsvImportJob[]
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model GeneratedSchema {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  intentJson   Json
+  systemDesign Json
+  uiSchema     Json
+  apiSchema    Json
+  dbSchema     Json
+  authSchema   Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("generated_schemas")
+}
+
+model ValidationReport {
+  id        String           @id @default(cuid())
+  projectId String
+  issues    Json             // ValidationIssue[]
+  status    ValidationStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("validation_reports")
+}
+
+enum ValidationStatus {
+  PENDING
+  PASSED
+  FAILED
+  REPAIRED
+}
+
+model RepairLog {
+  id        String   @id @default(cuid())
+  projectId String
+  repairs   Json     // RepairAction[]
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("repair_logs")
+}
+
+model Metric {
+  id          String   @id @default(cuid())
+  projectId   String
+  stage       String
+  latencyMs   Int
+  success     Boolean
+  repairCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("metrics")
+}
+
+model RuntimeRecord {
+  id          String   @id @default(cuid())
+  projectId   String
+  entityName  String
+  data        Json
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, entityName])
+  @@map("runtime_records")
+}
+
+model RuntimeNotification {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  type      String
+  title     String
+  message   String   @db.Text
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, userId, createdAt])
+  @@map("runtime_notifications")
+}
+
+model WorkflowRun {
+  id           String   @id @default(cuid())
+  projectId    String
+  workflowName String
+  entityName   String?
+  action       String
+  status       String
+  summary      String   @db.Text
+  payload      Json?
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("workflow_runs")
+}
+
+model CsvImportJob {
+  id           String   @id @default(cuid())
+  projectId    String
+  entityName   String
+  fileName     String
+  status       String
+  rowCount     Int      @default(0)
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  errors       Json?
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, entityName, createdAt])
+  @@map("csv_import_jobs")
+}
