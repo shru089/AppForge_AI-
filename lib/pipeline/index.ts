@@ -1,6 +1,5 @@
-import { extractIntent } from "./intentExtractor";
-import { designSystem } from "./systemDesigner";
-import { generateSchemas } from "./schemaGenerator";
+import { generateCompleteArchitecture, CompleteArchitecture } from "./megaGenerator";
+import { generateDemoArchitecture } from "./demoGenerator";
 import { validateSchemas } from "./validator";
 import { repairSchemas } from "./repairEngine";
 import { recordMetric } from "../metrics";
@@ -19,27 +18,15 @@ async function runStage<T>(
   try {
     const data = await fn();
     const latencyMs = Date.now() - start;
-
-    await recordMetric({
-      projectId,
-      stage,
-      latencyMs,
-      success: true,
-    });
-
+    await recordMetric({ projectId, stage, latencyMs, success: true });
     return { stage, success: true, data, latencyMs };
-  } catch (err) {
+  } catch (err: any) {
     const latencyMs = Date.now() - start;
     const error = err instanceof Error ? err.message : "Unknown error";
-
-    await recordMetric({
-      projectId,
-      stage,
-      latencyMs,
-      success: false,
-    });
-
-    return { stage, success: false, error, latencyMs };
+    // Check for rate limit error
+    const isRateLimit = error.includes("429") || error.includes("quota");
+    await recordMetric({ projectId, stage, latencyMs, success: false });
+    return { stage, success: false, error, latencyMs, isRateLimit } as any;
   }
 }
 
@@ -49,66 +36,79 @@ export async function runPipeline(
 ): Promise<PipelineResult> {
   const pipelineStart = Date.now();
   const stages: StageResult[] = [];
+  let isDemoMode = false;
 
-  // ── Stage 1: Intent Extraction ─────────────────────────────────────────
-  const intentStage = await runStage("intent", projectId, () =>
-    extractIntent(prompt)
+  // ── Stage 1: Mega Generation (Intent, Design, Schema) ─────────────────
+  let architectureStage = await runStage("mega" as any, projectId, () =>
+    generateCompleteArchitecture(prompt)
   );
-  stages.push(intentStage);
 
-  if (!intentStage.success || !intentStage.data) {
-    return {
-      projectId,
-      success: false,
-      stages,
-      intent: { appType: "", entities: [], roles: [], features: [] },
-      systemDesign: { entities: [], relationships: [], workflows: [], permissions: [] },
-      schemas: {
-        uiSchema: { pages: [], components: [] },
-        apiSchema: { endpoints: [], middleware: [], version: "v1" },
-        dbSchema: { tables: [] },
-        authSchema: { providers: [], roles: [], strategy: "", sessionType: "database", protectedRoutes: [] },
-      },
-      validationReport: {
-        isValid: false,
-        issues: [],
-        summary: { errors: 1, warnings: 0, info: 0 },
+  let architecture = architectureStage.data;
+
+  // ── Fallback Mechanism ────────────────────────────────────────────────
+  if (!architectureStage.success) {
+    // If rate limited, use demo mode fallback
+    if ((architectureStage as any).isRateLimit) {
+      console.log("[Pipeline] 429 Quota Exceeded. Falling back to Demo Mode.");
+      isDemoMode = true;
+      architecture = generateDemoArchitecture(prompt);
+      // Mark stage as success since we successfully fell back
+      architectureStage = {
+        stage: "mega" as any,
+        success: true,
+        data: architecture,
+        latencyMs: architectureStage.latencyMs,
+      };
+    } else {
+      stages.push(architectureStage);
+      return {
+        projectId,
+        success: false,
+        stages,
+        intent: { appType: "", entities: [], roles: [], features: [] },
+        systemDesign: { entities: [], relationships: [], workflows: [], permissions: [] },
+        schemas: {
+          uiSchema: { pages: [], components: [] },
+          apiSchema: { endpoints: [], middleware: [], version: "v1" },
+          dbSchema: { tables: [] },
+          authSchema: { providers: [], roles: [], strategy: "", sessionType: "database", protectedRoutes: [] },
+        },
+        validationReport: {
+          isValid: false,
+          issues: [],
+          summary: { errors: 1, warnings: 0, info: 0 },
+          timestamp: new Date().toISOString(),
+        },
+        totalLatencyMs: Date.now() - pipelineStart,
         timestamp: new Date().toISOString(),
-      },
-      totalLatencyMs: Date.now() - pipelineStart,
-      timestamp: new Date().toISOString(),
-    };
+      };
+    }
   }
 
-  const intent = intentStage.data;
+  stages.push(architectureStage);
 
-  // ── Stage 2: System Design ─────────────────────────────────────────────
-  const designStage = await runStage("design", projectId, () =>
-    designSystem(intent)
-  );
-  stages.push(designStage);
+  const { intent, systemDesign, schemas } = architecture!;
 
-  const systemDesign = designStage.data ?? {
-    entities: [],
-    relationships: [],
-    workflows: [],
-    permissions: [],
-  };
+  if (intent.requiresClarification) {
+      return {
+        projectId,
+        success: false,
+        stages,
+        intent,
+        systemDesign,
+        schemas,
+        validationReport: {
+          isValid: false,
+          issues: [{type: "schema", path: "intent", message: "Clarification required", severity: "error"}],
+          summary: { errors: 1, warnings: 0, info: 0 },
+          timestamp: new Date().toISOString(),
+        },
+        totalLatencyMs: Date.now() - pipelineStart,
+        timestamp: new Date().toISOString(),
+      };
+  }
 
-  // ── Stage 3: Schema Generation ─────────────────────────────────────────
-  const schemaStage = await runStage("schema", projectId, () =>
-    generateSchemas(intent, systemDesign)
-  );
-  stages.push(schemaStage);
-
-  const schemas = schemaStage.data ?? {
-    uiSchema: { pages: [], components: [] },
-    apiSchema: { endpoints: [], middleware: [], version: "v1" },
-    dbSchema: { tables: [] },
-    authSchema: { providers: [], roles: [], strategy: "", sessionType: "database", protectedRoutes: [] },
-  };
-
-  // ── Stage 4: Validation ────────────────────────────────────────────────
+  // ── Stage 2: Validation ────────────────────────────────────────────────
   const validationStage = await runStage("validation", projectId, async () =>
     validateSchemas(intent, systemDesign, schemas)
   );
@@ -121,12 +121,12 @@ export async function runPipeline(
     timestamp: new Date().toISOString(),
   };
 
-  // ── Stage 5: Repair (only if needed) ──────────────────────────────────
+  // ── Stage 3: Repair (Local, Rule-based) ──────────────────────────────────
   let repairResult;
   let finalSchemas = schemas;
 
   if (!validationReport.isValid || validationReport.issues.length > 0) {
-    const repairStage = await runStage("repair", projectId, () =>
+    const repairStage = await runStage("repair", projectId, async () =>
       repairSchemas(schemas, validationReport, intent)
     );
     stages.push(repairStage);
@@ -144,7 +144,7 @@ export async function runPipeline(
     }
   }
 
-  // ── Stage 6: Preview (build preview schema) ────────────────────────────
+  // ── Stage 4: Preview (build preview schema) ────────────────────────────
   const previewStage = await runStage("preview", projectId, async () => {
     const components = finalSchemas.uiSchema.components?.map((comp, i) => ({
       id: `comp_${i}`,
@@ -175,5 +175,6 @@ export async function runPipeline(
     repairResult,
     totalLatencyMs: Date.now() - pipelineStart,
     timestamp: new Date().toISOString(),
+    isDemoMode
   };
 }

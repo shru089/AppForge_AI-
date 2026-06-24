@@ -29,6 +29,7 @@ export function PromptInput() {
   const [showPipeline, setShowPipeline] = useState(false);
   const [stages, setStages] = useState<PipelineStageInfo[]>(STAGE_DEFINITIONS);
   const [isComplete, setIsComplete] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | undefined>();
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -48,6 +49,7 @@ export function PromptInput() {
     setStages(STAGE_DEFINITIONS.map(s => ({ ...s, status: "pending" })));
     setIsComplete(false);
     setPipelineError(undefined);
+    setIsDemoMode(false);
     setShowPipeline(true);
 
     try {
@@ -106,8 +108,12 @@ export function PromptInput() {
             case "stage:skip":
               updateStage(data.stage as string, { status: "skipped" });
               break;
+            case "demo_mode":
+              setIsDemoMode(data.active as boolean);
+              break;
             case "complete":
               setIsComplete(true);
+              if (data.isDemoMode) setIsDemoMode(true);
               if (projectId) {
                 // Brief delay so user sees the success state
                 setTimeout(() => {
@@ -143,6 +149,7 @@ export function PromptInput() {
             stages={stages}
             prompt={prompt}
             isComplete={isComplete}
+            isDemoMode={isDemoMode}
             error={pipelineError}
             onClose={() => {
               setShowPipeline(false);

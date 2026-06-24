@@ -1,99 +1,78 @@
 # AppForge AI
 
-AppForge AI is an advanced generative AI platform that transforms natural language prompts into fully structured, functional application schemas. By orchestrating a multi-stage AI pipeline, AppForge automates the heavy lifting of system design, database modeling, API definitions, and UI scaffolding.
+**AppForge AI** is an intelligent, full-stack application generator that takes a simple natural language prompt and autonomously generates complete application blueprints—including UI components, API schemas, Database relationships, and Authentication strategies.
 
-## Overview
+## 🌟 Overview
+AppForge AI allows users to describe an application (e.g., "A SaaS project management tool with teams and tasks") and instantly spins up a comprehensive architecture. It is designed to bridge the gap between ideation and scaffolding, providing developers with a structured starting point for any complex web application.
 
-Instead of just generating code snippets, AppForge AI takes a holistic architectural approach. Users provide a simple description of the application they want to build, and the platform systematically derives the core intent, designs the system architecture, and outputs comprehensive JSON schemas for the UI, API, Database, and Authentication layers. It even features self-healing mechanisms to validate and auto-repair generated schemas before rendering a live preview.
+## 🏗️ Architecture
+The system is built on a resilient, multi-stage pipeline that interacts with Google's Gemini API:
+1. **Mega Generation:** A single optimized LLM call extracts the user's intent, designs the system, and generates the underlying schemas.
+2. **Local Validation:** Schemas are rigorously validated against Zod models to ensure consistency.
+3. **Auto-Repair Engine:** If the LLM generates invalid JSON or schema mismatches, the local repair engine deterministically patches the architecture without requiring costly API retries.
+4. **Demo Mode Fallback:** If the Gemini API hits a `429 Quota Exceeded` rate limit (common on free tiers), the pipeline seamlessly intercepts the error and falls back to pre-defined architectural templates, allowing the application to continue functioning uninterrupted.
 
-## Architecture
+## 🛠️ Tech Stack
+- **Frontend:** Next.js 15, React 19, Tailwind CSS, Framer Motion
+- **Backend:** Next.js App Router (Server Actions & API Routes)
+- **Database:** PostgreSQL (via Prisma ORM)
+- **AI Integration:** Google Generative AI (Gemini 2.0 Flash)
+- **Validation:** Zod
+- **Deployment:** Vercel & Docker (Standalone Mode)
 
-AppForge AI is built around a modern monolithic architecture utilizing the **Next.js App Router**. 
-- **Frontend**: A highly interactive, animated user interface built with React, Tailwind CSS, Framer Motion, and Three.js for 3D elements.
-- **Backend / API**: Serverless API routes handle the complex orchestration of AI tasks, database transactions, and authentication.
-- **Database**: PostgreSQL database managed via Prisma ORM for robust schema definitions and type-safe queries.
-- **AI Engine**: Powered by Google's Gemini Generative AI, coordinated through custom pipeline stages (Intent, Design, Schema generation, Validation, and Auto-repair).
+## 🚀 Setup
 
-## Tech Stack
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL Database
+- Google Gemini API Key
 
-- **Framework**: Next.js 15 (App Router) & React 19
-- **Styling**: Tailwind CSS & Framer Motion (Animations)
-- **UI Components**: Radix UI, Lucide React, Recharts
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: NextAuth.js (v5 Beta) with Google OAuth
-- **AI Integration**: Google Generative AI (`@google/generative-ai`)
-- **Language**: TypeScript
-
-## Setup
-
-1. **Clone the repository:**
+### Installation
+1. Clone the repository:
    ```bash
    git clone <repository-url>
    cd AppForge_AI
    ```
-
-2. **Install dependencies:**
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-3. **Configure Environment Variables:**
-   Copy the example environment file and fill in your credentials (see the Environment Variables section below).
+3. Set up the database:
    ```bash
-   cp .env.example .env.local
+   npx prisma generate
+   npx prisma db push
    ```
-
-4. **Initialize the Database:**
-   Push the Prisma schema to your database and generate the Prisma client.
-   ```bash
-   npm run db:push
-   npm run db:generate
-   ```
-
-5. **Start the Development Server:**
+4. Start the development server:
    ```bash
    npm run dev
    ```
-   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Environment Variables
-
-Your `.env.local` file must include the following keys:
-
+## 🔑 Environment Variables
+Create a `.env.local` file in the root directory with the following keys:
 ```env
-# ─── Database ────────────────────────────────────────────────
-DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
+# Database Configuration
+DATABASE_URL="postgresql://user:password@localhost:5432/appforge"
 
-# ─── NextAuth ────────────────────────────────────────────────
-AUTH_SECRET="your-secret-here" # Generate with: openssl rand -base64 32
+# Authentication (NextAuth)
+NEXTAUTH_SECRET="your_nextauth_secret_key"
 NEXTAUTH_URL="http://localhost:3000"
 
-# ─── Google OAuth ────────────────────────────────────────────
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-
-# ─── Email (Resend) ──────────────────────────────────────────
-RESEND_API_KEY="re_xxxxxxxxxxxx"
-EMAIL_FROM="AppForge AI <noreply@yourdomain.com>"
-
-# ─── Gemini AI ───────────────────────────────────────────────
-GEMINI_API_KEY="AIzaSy..."
+# AI Integration
+GEMINI_API_KEY="your_google_gemini_api_key"
 ```
 
-## Pipeline Flow
+## 🔄 Pipeline Flow
+1. **User Input:** User submits a prompt via the beautiful, motion-animated dashboard.
+2. **Streaming Execution:** The API route triggers the generator, streaming progress events (`stage:start`, `stage:done`) back to the client via SSE (Server-Sent Events).
+3. **Resilience Check:** If an API rate limit is reached, the system flips `isDemoMode` to true and uses offline templates.
+4. **Validation & Repair:** The output is validated. Missing fields or relational inconsistencies are repaired locally.
+5. **Persistence:** The final architecture is saved to the PostgreSQL database.
+6. **Preview:** The user is redirected to a dynamic project dashboard to explore their generated schemas and entity relationships.
 
-When a user submits a prompt, the application passes it through a sophisticated AI orchestration pipeline:
+## ⚠️ Known Limitations
+- **API Quotas:** The free tier of the Gemini API is highly sensitive to rate limits. The system employs a "Demo Mode" fallback to mitigate this, but live AI generation may temporarily pause when limits are hit.
+- **Relational Complexity:** Highly complex nested entities may occasionally require manual tweaking after the repair engine passes.
+- **Metrics Constraints:** Evaluation scripts may throw non-critical foreign key violations when run rapidly against dummy project IDs.
 
-1. **Intent Extraction**: Analyzes the raw prompt to determine the core app type, entities, roles, and necessary features.
-2. **System Design**: Drafts the architectural blueprints and data models required to satisfy the extracted intent.
-3. **Schema Generation**: Parallel execution to generate granular schemas for the UI layout, REST APIs, Database structure, and Authentication rules.
-4. **Validation**: The generated outputs are strictly evaluated against formatting and logical consistency constraints.
-5. **Auto-Repair**: If validation fails, the repair module automatically prompts the AI to resolve discrepancies and heal the schema.
-6. **Live Preview**: Once successful, the UI schema is dynamically rendered in the browser to give the user a live, interactive mockup.
-
-## Known Limitations
-
-- **Complex Schema Tuning**: While the auto-repair loop catches formatting issues, highly complex domain logic might require manual tweaking after schema generation.
-- **Preview Render Bounds**: The Live Preview dynamically maps standard UI components (Tables, Forms, Dashboards, Cards). Unsupported UI component types may render as generic placeholders.
-- **AI Latency**: Because the pipeline requires multi-step sequential orchestration and generation, complex prompts may take up to 20-40 seconds to fully process and validate.
-- **Hard Limits on Output**: Exceptionally large applications may hit LLM output token limits during the schema generation phase.
+---
+*Built with ❤️ to accelerate the future of software development.*

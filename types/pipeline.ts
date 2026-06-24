@@ -234,6 +234,7 @@ export interface PipelineResult {
   repairResult?: RepairResult;
   totalLatencyMs: number;
   timestamp: string;
+  isDemoMode?: boolean;
 }
 
 // ─── Preview Types ────────────────────────────────────────────────────────────

@@ -37,3 +37,6 @@ next-env.d.ts
 
 # prisma
 prisma/*.db
+
+# ignore scratch files
+scratch.js

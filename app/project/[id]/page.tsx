@@ -312,12 +312,12 @@ function OverviewTab({ project }: { project: ProjectData }) {
                   <span className="text-sm font-bold text-black dark:text-white">{entity.name}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {entity.fields.slice(0, 6).map((f) => (
-                    <span key={f.name} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-white/40 border border-gray-200 dark:border-white/10 font-mono">
+                  {(entity.fields || []).slice(0, 6).map((f: any) => (
+                    <span key={f.name} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-white/60 border border-gray-200 dark:border-white/10 font-mono">
                       {f.name}: <span className="text-indigo-500 dark:text-indigo-400">{f.type}</span>
                     </span>
                   ))}
-                  {entity.fields.length > 6 && (
+                  {((entity.fields || []).length > 6) && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-white/30">+{entity.fields.length - 6} more</span>
                   )}
                 </div>

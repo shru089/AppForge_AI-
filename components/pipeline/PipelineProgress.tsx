@@ -61,11 +61,12 @@ interface PipelineProgressProps {
   stages: PipelineStageInfo[];
   prompt: string;
   isComplete: boolean;
+  isDemoMode?: boolean;
   error?: string;
   onClose?: () => void;
 }
 
-export function PipelineProgress({ stages, prompt, isComplete, error, onClose }: PipelineProgressProps) {
+export function PipelineProgress({ stages, prompt, isComplete, isDemoMode, error, onClose }: PipelineProgressProps) {
   const completedCount = stages.filter(s => s.status === "done" || s.status === "skipped").length;
   const progressPct = stages.length > 0 ? (completedCount / stages.length) * 100 : 0;
 
@@ -95,12 +96,25 @@ export function PipelineProgress({ stages, prompt, isComplete, error, onClose }:
               <Sparkles className="w-4 h-4 text-white" />
             </motion.div>
             <div>
-              <h2 className="text-base font-bold text-black dark:text-white">
+              <h2 className="text-base font-bold text-black dark:text-white flex items-center gap-2">
                 {isComplete ? (error ? "Pipeline Failed" : "App Generated!") : "Generating Your App…"}
+                {isDemoMode && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 rounded-full border border-amber-200 dark:border-amber-500/30">
+                    Demo Mode
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-gray-500 dark:text-white/40 truncate max-w-[320px]">{prompt}</p>
             </div>
           </div>
+
+          {isDemoMode && (
+            <div className="mt-2 mb-1 p-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                AI generation unavailable. Using pre-defined schema templates.
+              </p>
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="mt-4 h-1.5 w-full bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
